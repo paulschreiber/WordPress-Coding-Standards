@@ -31,7 +31,7 @@ For convenience of using `phpcs` as global command you might want to add path to
 
 1. Install PHP_CodeSniffer by following its [installation instructions](https://github.com/squizlabs/PHP_CodeSniffer#installation) (via Composer, PEAR, or Git checkout).
 
-  Do ensure, if for example you're using [VVV](https://github.com/Varying-Vagrant-Vagrants/VVV), that you have the **latest version** of CodeSniffer (earlier versions, e.g. ~1.5.5, may warn about incorrect line indentation on every single line even if your code is actually correct.)
+  Do ensure, if for example you're using [VVV](https://github.com/Varying-Vagrant-Vagrants/VVV), that PHP_CodeSniffer's version matches our requirements (you can check the required version in [composer.json](composer.json#L18)).
 
 2. Clone WordPress standards repository:
 
@@ -40,6 +40,21 @@ For convenience of using `phpcs` as global command you might want to add path to
 3. Add its path to PHP_CodeSniffer configuration: 
 
         phpcs --config-set installed_paths /path/to/wpcs
+
+
+To summarize:
+
+```bash
+cd ~/projects
+git clone https://github.com/squizlabs/PHP_CodeSniffer.git phpcs
+git clone -b master https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards.git wpcs
+cd phpcs
+./scripts/phpcs --config-set installed_paths ../wpcs
+```
+
+And then add the `~/projects/phpcs/scripts` directory to your `PATH` environment variable via your `.bashrc`.
+
+You should then see `WordPress-Core` et al listed when you run `phpcs -i`.
 
 ## How to use
 
@@ -80,10 +95,13 @@ The project encompasses a super–set of the sniffs that the WordPress community
 
 You can use the following as standard names when invoking `phpcs` to select sniffs, fitting your needs:
 
- - `WordPress` — all of the sniffs in the project.
- - `WordPress-Core` — sniffs that seek to implement the [WordPress core coding standards](http://make.wordpress.org/core/handbook/coding-standards/) and go no further.
- - `WordPress-Extra` — `WordPress-Core` plus extra best practices sniffs, which are not part of core coding standards and could be controversial.
- - `WordPress-VIP` — `WordPress-Core` plus sniffs that seek to implement the [WordPress VIP coding requirements](http://vip.wordpress.com/documentation/code-review-what-we-look-for/).
+ - `WordPress` — complete set with all of the sniffs in the project
+  - `WordPress-Core` — main ruleset for [WordPress core coding standards](http://make.wordpress.org/core/handbook/coding-standards/)
+  - `WordPress-Docs` — additional ruleset for inline documentation
+  - `WordPress-Extra` — extended ruleset for optional best practices sniffs
+    - includes `WordPress-Core`
+  - `WordPress-VIP` — extended ruleset for [WordPress VIP coding requirements](http://vip.wordpress.com/documentation/code-review-what-we-look-for/)
+    - includes `WordPress-Core`
 
 
 ### Using custom ruleset
