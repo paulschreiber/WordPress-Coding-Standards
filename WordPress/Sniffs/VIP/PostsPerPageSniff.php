@@ -7,6 +7,10 @@
  * @license https://opensource.org/licenses/MIT MIT
  */
 
+namespace WordPress\Sniffs\VIP;
+
+use WordPress\AbstractArrayAssignmentRestrictionsSniff;
+
 /**
  * Flag returning high or infinite posts_per_page.
  *
@@ -15,22 +19,12 @@
  * @package WPCS\WordPressCodingStandards
  *
  * @since   0.3.0
+ * @since   0.13.0 Class name changed: this class is now namespaced.
  */
-class WordPress_Sniffs_VIP_PostsPerPageSniff extends WordPress_AbstractArrayAssignmentRestrictionsSniff {
+class PostsPerPageSniff extends AbstractArrayAssignmentRestrictionsSniff {
 
 	/**
 	 * Groups of variables to restrict.
-	 * This should be overridden in extending classes.
-	 *
-	 * Example: groups => array(
-	 * 	'wpdb' => array(
-	 * 		'type'          => 'error' | 'warning',
-	 * 		'message'       => 'Dont use this one please!',
-	 * 		'variables'     => array( '$val', '$var' ),
-	 * 		'object_vars'   => array( '$foo->bar', .. ),
-	 * 		'array_members' => array( '$foo['bar']', .. ),
-	 * 	)
-	 * )
 	 *
 	 * @return array
 	 */

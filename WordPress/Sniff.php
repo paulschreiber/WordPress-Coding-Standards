@@ -7,6 +7,12 @@
  * @license https://opensource.org/licenses/MIT MIT
  */
 
+namespace WordPress;
+
+use PHP_CodeSniffer_Sniff as PHPCS_Sniff;
+use PHP_CodeSniffer_File as File;
+use PHP_CodeSniffer_Tokens as Tokens;
+
 /**
  * Represents a PHP_CodeSniffer sniff for sniffing WordPress coding standards.
  *
@@ -14,8 +20,19 @@
  *
  * @package WPCS\WordPressCodingStandards
  * @since   0.4.0
+ *
+ * {@internal This class contains numerous properties where the array format looks
+ *            like `'string' => true`, i.e. the array item is set as the array key.
+ *            This allows for sniffs to verify whether something is in one of these
+ *            lists using `isset()` rather than `in_array()` which is a much more
+ *            efficient (faster) check to execute and therefore improves the
+ *            performance of the sniffs.
+ *            The `true` value in those cases is used as a placeholder and has no
+ *            meaning in and of itself.
+ *            In the rare few cases where the array values *do* have meaning, this
+ *            is documented in the property documentation.}}
  */
-abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
+abstract class Sniff implements PHPCS_Sniff {
 
 	/**
 	 * List of the functions which verify nonces.
@@ -258,7 +275,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		'sanitize_email'             => true,
 		'sanitize_file_name'         => true,
 		'sanitize_hex_color_no_hash' => true,
-		'sanitize_hex_color'	     => true,
+		'sanitize_hex_color'         => true,
 		'sanitize_html_class'        => true,
 		'sanitize_meta'              => true,
 		'sanitize_mime_type'         => true,
@@ -267,6 +284,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		'sanitize_term_field'        => true,
 		'sanitize_term'              => true,
 		'sanitize_text_field'        => true,
+		'sanitize_textarea_field'    => true,
 		'sanitize_title_for_query'   => true,
 		'sanitize_title_with_dashes' => true,
 		'sanitize_title'             => true,
@@ -478,56 +496,254 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	);
 
 	/**
-	 * Whitelist of classes which test classes can extend.
+	 * List of global WP variables.
 	 *
-	 * @since 0.11.0
-	 *
-	 * @var string[]
-	 */
-	protected $test_class_whitelist = array(
-		'WP_UnitTestCase'            => true,
-		'PHPUnit_Framework_TestCase' => true,
-	);
-
-	/**
-	 * Custom list of classes which test classes can extend.
-	 *
-	 * This property allows end-users to add to the $test_class_whitelist via their ruleset.
-	 * This property will need to be set for each sniff which uses the
-	 * `is_token_in_test_method()` method.
-	 * Currently the method is only used by the `WordPress.Variables.GlobalVariables`
-	 * sniff.
-	 *
-	 * Example usage:
-	 * <rule ref="WordPress.[Subset].[Sniffname]">
-	 *  <properties>
-	 *   <property name="custom_test_class_whitelist" type="array" value="My_Plugin_First_Test_Class,My_Plugin_Second_Test_Class"/>
-	 *  </properties>
-	 * </rule>
-	 *
-	 * @since 0.11.0
-	 *
-	 * @var string|string[]
-	 */
-	public $custom_test_class_whitelist = array();
-
-	/**
-	 * The current file being sniffed.
-	 *
-	 * @since 0.4.0
-	 *
-	 * @var PHP_CodeSniffer_File
-	 */
-	protected $phpcsFile;
-
-	/**
-	 * The list of tokens in the current file being sniffed.
-	 *
-	 * @since 0.4.0
+	 * @since 0.3.0
+	 * @since 0.11.0 Changed visibility from public to protected.
+	 * @since 0.12.0 Renamed from `$globals` to `$wp_globals` to be more descriptive.
+	 * @since 0.12.0 Moved from WordPress_Sniffs_Variables_GlobalVariablesSniff to WordPress_Sniff
 	 *
 	 * @var array
 	 */
-	protected $tokens;
+	protected $wp_globals = array(
+		'_links_add_base'                  => true,
+		'_links_add_target'                => true,
+		'_menu_item_sort_prop'             => true,
+		'_nav_menu_placeholder'            => true,
+		'_new_bundled_files'               => true,
+		'_old_files'                       => true,
+		'_parent_pages'                    => true,
+		'_registered_pages'                => true,
+		'_updated_user_settings'           => true,
+		'_wp_additional_image_sizes'       => true,
+		'_wp_admin_css_colors'             => true,
+		'_wp_default_headers'              => true,
+		'_wp_deprecated_widgets_callbacks' => true,
+		'_wp_last_object_menu'             => true,
+		'_wp_last_utility_menu'            => true,
+		'_wp_menu_nopriv'                  => true,
+		'_wp_nav_menu_max_depth'           => true,
+		'_wp_post_type_features'           => true,
+		'_wp_real_parent_file'             => true,
+		'_wp_registered_nav_menus'         => true,
+		'_wp_sidebars_widgets'             => true,
+		'_wp_submenu_nopriv'               => true,
+		'_wp_suspend_cache_invalidation'   => true,
+		'_wp_theme_features'               => true,
+		'_wp_using_ext_object_cache'       => true,
+		'action'                           => true,
+		'active_signup'                    => true,
+		'admin_body_class'                 => true,
+		'admin_page_hooks'                 => true,
+		'all_links'                        => true,
+		'allowedentitynames'               => true,
+		'allowedposttags'                  => true,
+		'allowedtags'                      => true,
+		'auth_secure_cookie'               => true,
+		'authordata'                       => true,
+		'avail_post_mime_types'            => true,
+		'avail_post_stati'                 => true,
+		'blog_id'                          => true,
+		'blog_title'                       => true,
+		'blogname'                         => true,
+		'cat'                              => true,
+		'cat_id'                           => true,
+		'charset_collate'                  => true,
+		'comment'                          => true,
+		'comment_alt'                      => true,
+		'comment_depth'                    => true,
+		'comment_status'                   => true,
+		'comment_thread_alt'               => true,
+		'comment_type'                     => true,
+		'comments'                         => true,
+		'compress_css'                     => true,
+		'compress_scripts'                 => true,
+		'concatenate_scripts'              => true,
+		'current_screen'                   => true,
+		'current_site'                     => true,
+		'current_user'                     => true,
+		'currentcat'                       => true,
+		'currentday'                       => true,
+		'currentmonth'                     => true,
+		'custom_background'                => true,
+		'custom_image_header'              => true,
+		'default_menu_order'               => true,
+		'descriptions'                     => true,
+		'domain'                           => true,
+		'editor_styles'                    => true,
+		'error'                            => true,
+		'errors'                           => true,
+		'EZSQL_ERROR'                      => true,
+		'feeds'                            => true,
+		'GETID3_ERRORARRAY'                => true,
+		'hook_suffix'                      => true,
+		'HTTP_RAW_POST_DATA'               => true,
+		'id'                               => true,
+		'in_comment_loop'                  => true,
+		'interim_login'                    => true,
+		'is_apache'                        => true,
+		'is_chrome'                        => true,
+		'is_gecko'                         => true,
+		'is_IE'                            => true,
+		'is_IIS'                           => true,
+		'is_iis7'                          => true,
+		'is_macIE'                         => true,
+		'is_opera'                         => true,
+		'is_safari'                        => true,
+		'is_winIE'                         => true,
+		'l10n'                             => true,
+		'link'                             => true,
+		'link_id'                          => true,
+		'locale'                           => true,
+		'locked_post_status'               => true,
+		'lost'                             => true,
+		'm'                                => true,
+		'map'                              => true,
+		'menu'                             => true,
+		'menu_order'                       => true,
+		'merged_filters'                   => true,
+		'mode'                             => true,
+		'monthnum'                         => true,
+		'more'                             => true,
+		'multipage'                        => true,
+		'names'                            => true,
+		'nav_menu_selected_id'             => true,
+		'new_whitelist_options'            => true,
+		'numpages'                         => true,
+		'one_theme_location_no_menus'      => true,
+		'opml'                             => true,
+		'order'                            => true,
+		'orderby'                          => true,
+		'overridden_cpage'                 => true,
+		'page'                             => true,
+		'paged'                            => true,
+		'pagenow'                          => true,
+		'pages'                            => true,
+		'parent_file'                      => true,
+		'pass_allowed_html'                => true,
+		'pass_allowed_protocols'           => true,
+		'path'                             => true,
+		'per_page'                         => true,
+		'PHP_SELF'                         => true,
+		'phpmailer'                        => true,
+		'plugin_page'                      => true,
+		'plugins'                          => true,
+		'post'                             => true,
+		'post_default_category'            => true,
+		'post_default_title'               => true,
+		'post_ID'                          => true,
+		'post_id'                          => true,
+		'post_mime_types'                  => true,
+		'post_type'                        => true,
+		'post_type_object'                 => true,
+		'posts'                            => true,
+		'preview'                          => true,
+		'previouscat'                      => true,
+		'previousday'                      => true,
+		'previousweekday'                  => true,
+		'redir_tab'                        => true,
+		'required_mysql_version'           => true,
+		'required_php_version'             => true,
+		'rnd_value'                        => true,
+		'role'                             => true,
+		's'                                => true,
+		'search'                           => true,
+		'self'                             => true,
+		'shortcode_tags'                   => true,
+		'show_admin_bar'                   => true,
+		'sidebars_widgets'                 => true,
+		'status'                           => true,
+		'submenu'                          => true,
+		'submenu_file'                     => true,
+		'super_admins'                     => true,
+		'tab'                              => true,
+		'table_prefix'                     => true,
+		'tabs'                             => true,
+		'tag'                              => true,
+		'targets'                          => true,
+		'tax'                              => true,
+		'taxnow'                           => true,
+		'taxonomy'                         => true,
+		'term'                             => true,
+		'text_direction'                   => true,
+		'theme_field_defaults'             => true,
+		'themes_allowedtags'               => true,
+		'timeend'                          => true,
+		'timestart'                        => true,
+		'tinymce_version'                  => true,
+		'title'                            => true,
+		'totals'                           => true,
+		'type'                             => true,
+		'typenow'                          => true,
+		'updated_timestamp'                => true,
+		'upgrading'                        => true,
+		'urls'                             => true,
+		'user_email'                       => true,
+		'user_ID'                          => true,
+		'user_identity'                    => true,
+		'user_level'                       => true,
+		'user_login'                       => true,
+		'user_url'                         => true,
+		'userdata'                         => true,
+		'usersearch'                       => true,
+		'whitelist_options'                => true,
+		'withcomments'                     => true,
+		'wp'                               => true,
+		'wp_actions'                       => true,
+		'wp_admin_bar'                     => true,
+		'wp_cockneyreplace'                => true,
+		'wp_current_db_version'            => true,
+		'wp_current_filter'                => true,
+		'wp_customize'                     => true,
+		'wp_dashboard_control_callbacks'   => true,
+		'wp_db_version'                    => true,
+		'wp_did_header'                    => true,
+		'wp_embed'                         => true,
+		'wp_file_descriptions'             => true,
+		'wp_filesystem'                    => true,
+		'wp_filter'                        => true,
+		'wp_hasher'                        => true,
+		'wp_header_to_desc'                => true,
+		'wp_importers'                     => true,
+		'wp_json'                          => true,
+		'wp_list_table'                    => true,
+		'wp_local_package'                 => true,
+		'wp_locale'                        => true,
+		'wp_meta_boxes'                    => true,
+		'wp_object_cache'                  => true,
+		'wp_plugin_paths'                  => true,
+		'wp_post_statuses'                 => true,
+		'wp_post_types'                    => true,
+		'wp_queries'                       => true,
+		'wp_query'                         => true,
+		'wp_registered_sidebars'           => true,
+		'wp_registered_widget_controls'    => true,
+		'wp_registered_widget_updates'     => true,
+		'wp_registered_widgets'            => true,
+		'wp_rewrite'                       => true,
+		'wp_rich_edit'                     => true,
+		'wp_rich_edit_exists'              => true,
+		'wp_roles'                         => true,
+		'wp_scripts'                       => true,
+		'wp_settings_errors'               => true,
+		'wp_settings_fields'               => true,
+		'wp_settings_sections'             => true,
+		'wp_smiliessearch'                 => true,
+		'wp_styles'                        => true,
+		'wp_taxonomies'                    => true,
+		'wp_the_query'                     => true,
+		'wp_theme_directories'             => true,
+		'wp_themes'                        => true,
+		'wp_user_roles'                    => true,
+		'wp_version'                       => true,
+		'wp_widget_factory'                => true,
+		'wp_xmlrpc_server'                 => true,
+		'wpcommentsjavascript'             => true,
+		'wpcommentspopupfile'              => true,
+		'wpdb'                             => true,
+		'wpsmiliestrans'                   => true,
+		'year'                             => true,
+	);
 
 	/**
 	 * A list of superglobals that incorporate user input.
@@ -547,18 +763,71 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	);
 
 	/**
+	 * Whitelist of classes which test classes can extend.
+	 *
+	 * @since 0.11.0
+	 *
+	 * @var string[]
+	 */
+	protected $test_class_whitelist = array(
+		'WP_UnitTestCase'            => true,
+		'PHPUnit_Framework_TestCase' => true,
+		'PHPUnit\Framework\TestCase' => true,
+	);
+
+	/**
+	 * Custom list of classes which test classes can extend.
+	 *
+	 * This property allows end-users to add to the $test_class_whitelist via their ruleset.
+	 * This property will need to be set for each sniff which uses the
+	 * `is_test_class()` method.
+	 * Currently the method is used by the `WordPress.Variables.GlobalVariables`,
+	 * `WordPress.NamingConventions.PrefixAllGlobals` and the `WordPress.Files.Filename` sniffs.
+	 *
+	 * Example usage:
+	 * <rule ref="WordPress.[Subset].[Sniffname]">
+	 *  <properties>
+	 *   <property name="custom_test_class_whitelist" type="array" value="My_Plugin_First_Test_Class,My_Plugin_Second_Test_Class"/>
+	 *  </properties>
+	 * </rule>
+	 *
+	 * @since 0.11.0
+	 *
+	 * @var string|string[]
+	 */
+	public $custom_test_class_whitelist = array();
+
+	/**
+	 * The current file being sniffed.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @var \PHP_CodeSniffer\Files\File
+	 */
+	protected $phpcsFile;
+
+	/**
+	 * The list of tokens in the current file being sniffed.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @var array
+	 */
+	protected $tokens;
+
+	/**
 	 * Set sniff properties and hand off to child class for processing of the token.
 	 *
 	 * @since 0.11.0
 	 *
-	 * @param PHP_CodeSniffer_File $phpcsFile The file being scanned.
-	 * @param int                  $stackPtr  The position of the current token
-	 *                                        in the stack passed in $tokens.
+	 * @param \PHP_CodeSniffer\Files\File $phpcsFile The file being scanned.
+	 * @param int                         $stackPtr  The position of the current token
+	 *                                               in the stack passed in $tokens.
 	 *
 	 * @return int|void Integer stack pointer to skip forward or void to continue
 	 *                  normal file processing.
 	 */
-	public function process( PHP_CodeSniffer_File $phpcsFile, $stackPtr ) {
+	public function process( File $phpcsFile, $stackPtr ) {
 		$this->init( $phpcsFile );
 		return $this->process_token( $stackPtr );
 	}
@@ -583,9 +852,9 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	 *
 	 * @since 0.4.0
 	 *
-	 * @param PHP_CodeSniffer_File $phpcsFile The file currently being processed.
+	 * @param \PHP_CodeSniffer\Files\File $phpcsFile The file currently being processed.
 	 */
-	protected function init( PHP_CodeSniffer_File $phpcsFile ) {
+	protected function init( File $phpcsFile ) {
 		$this->phpcsFile = $phpcsFile;
 		$this->tokens    = $phpcsFile->getTokens();
 	}
@@ -797,6 +1066,11 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	 */
 	protected function has_whitelist_comment( $comment, $stackPtr ) {
 
+		// Respect the PHPCS 3.x --ignore-annotations setting.
+		if ( true === PHPCSHelper::ignore_annotations( $this->phpcsFile ) ) {
+			return false;
+		}
+
 		$lastPtr     = $this->get_last_ptr_on_line( $stackPtr );
 		$end_of_line = $lastPtr;
 
@@ -819,13 +1093,13 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 
 		$last = $this->tokens[ $lastPtr ];
 
-		// Ignore if not a comment.
-		if ( T_COMMENT !== $last['code'] ) {
+		// Ignore if not a comment or not on the same line.
+		if ( T_COMMENT !== $last['code'] || $last['line'] !== $this->tokens[ $end_of_line ]['line'] ) {
 			return false;
 		}
 
 		// Now let's see if the comment contains the whitelist remark we're looking for.
-		return ( preg_match( '#' . preg_quote( $comment, '#' ) . '#i', $last['content'] ) === 1 );
+		return ( preg_match( '#\b' . preg_quote( $comment, '#' ) . '\b#i', $last['content'] ) === 1 );
 	}
 
 	/**
@@ -833,7 +1107,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	 *
 	 * Unit test methods are identified as such:
 	 * - Method name starts with `test_`.
-	 * - Method is within a class which either extends WP_UnitTestCase or PHPUnit_Framework_TestCase.
+	 * - Method is within a unit test class.
 	 *
 	 * @since 0.11.0
 	 *
@@ -860,6 +1134,31 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 			$structureToken = $traitToken;
 		}
 
+		return $this->is_test_class( $structureToken );
+	}
+
+	/**
+	 * Check if a class token is part of a unit test suite.
+	 *
+	 * Unit test classes are identified as such:
+	 * - Class which either extends WP_UnitTestCase or PHPUnit_Framework_TestCase
+	 *   or a custom whitelisted unit test class.
+	 *
+	 * @since 0.12.0 Split off from the `is_token_in_test_method()` method.
+	 *
+	 * @param int $stackPtr The position of the token to be examined.
+	 *                      This should be a class, anonymous class or trait token.
+	 *
+	 * @return bool True if the class is a unit test class, false otherwise.
+	 */
+	protected function is_test_class( $stackPtr ) {
+
+		if ( ! isset( $this->tokens[ $stackPtr ] )
+			|| in_array( $this->tokens[ $stackPtr ]['type'], array( 'T_CLASS', 'T_ANON_CLASS', 'T_TRAIT' ), true ) === false
+		) {
+			return false;
+		}
+
 		// Add any potentially whitelisted custom test classes to the whitelist.
 		$whitelist = $this->merge_custom_array(
 			$this->custom_test_class_whitelist,
@@ -867,13 +1166,13 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		);
 
 		// Is the class/trait one of the whitelisted test classes ?
-		$className = $this->phpcsFile->getDeclarationName( $structureToken );
+		$className = $this->phpcsFile->getDeclarationName( $stackPtr );
 		if ( isset( $whitelist[ $className ] ) ) {
 			return true;
 		}
 
 		// Does the class/trait extend one of the whitelisted test classes ?
-		$extendedClassName = $this->phpcsFile->findExtendedClassName( $structureToken );
+		$extendedClassName = $this->phpcsFile->findExtendedClassName( $stackPtr );
 		if ( isset( $whitelist[ $extendedClassName ] ) ) {
 			return true;
 		}
@@ -892,20 +1191,25 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	 *
 	 * @since 0.5.0
 	 *
-	 * @param int $stackPtr The index of the token in the stack. This must points to
+	 * @param int $stackPtr The index of the token in the stack. This must point to
 	 *                      either a T_VARIABLE or T_CLOSE_SQUARE_BRACKET token.
 	 *
 	 * @return bool Whether the token is a variable being assigned a value.
 	 */
 	protected function is_assignment( $stackPtr ) {
 
-		// Must be a variable or closing square bracket (see below).
-		if ( ! in_array( $this->tokens[ $stackPtr ]['code'], array( T_VARIABLE, T_CLOSE_SQUARE_BRACKET ), true ) ) {
+		static $valid = array(
+			T_VARIABLE             => true,
+			T_CLOSE_SQUARE_BRACKET => true,
+		);
+
+		// Must be a variable, constant or closing square bracket (see below).
+		if ( ! isset( $valid[ $this->tokens[ $stackPtr ]['code'] ] ) ) {
 			return false;
 		}
 
 		$next_non_empty = $this->phpcsFile->findNext(
-			PHP_CodeSniffer_Tokens::$emptyTokens
+			Tokens::$emptyTokens
 			, ( $stackPtr + 1 )
 			, null
 			, true
@@ -919,7 +1223,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		}
 
 		// If the next token is an assignment, that's all we need to know.
-		if ( isset( PHP_CodeSniffer_Tokens::$assignmentTokens[ $this->tokens[ $next_non_empty ]['code'] ] ) ) {
+		if ( isset( Tokens::$assignmentTokens[ $this->tokens[ $next_non_empty ]['code'] ] ) ) {
 			return true;
 		}
 
@@ -1099,7 +1403,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 
 		// Get the last non-empty token.
 		$prev = $this->phpcsFile->findPrevious(
-			PHP_CodeSniffer_Tokens::$emptyTokens
+			Tokens::$emptyTokens
 			, ( $stackPtr - 1 )
 			, null
 			, true
@@ -1177,17 +1481,24 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		// Arrays might be sanitized via array_map().
 		if ( 'array_map' === $functionName ) {
 
-			// Get the first parameter (name of function being used on the array).
-			$mapped_function = $this->phpcsFile->findNext(
-				PHP_CodeSniffer_Tokens::$emptyTokens
-				, ( $function_opener + 1 )
-				, $function_closer
-				, true
-			);
+			// Get the first parameter.
+			$callback = $this->get_function_call_parameter( ( $function_opener - 1 ), 1 );
 
-			// If we're able to resolve the function name, do so.
-			if ( false !== $mapped_function && T_CONSTANT_ENCAPSED_STRING === $this->tokens[ $mapped_function ]['code'] ) {
-				$functionName = $this->strip_quotes( $this->tokens[ $mapped_function ]['content'] );
+			if ( ! empty( $callback ) ) {
+				/*
+				 * If this is a function callback (not a method callback array) and we're able
+				 * to resolve the function name, do so.
+				 */
+				$first_non_empty = $this->phpcsFile->findNext(
+					Tokens::$emptyTokens,
+					$callback['start'],
+					( $callback['end'] + 1 ),
+					true
+				);
+
+				if ( false !== $first_non_empty && T_CONSTANT_ENCAPSED_STRING === $this->tokens[ $first_non_empty ]['code'] ) {
+					$functionName = $this->strip_quotes( $this->tokens[ $first_non_empty ]['content'] );
+				}
 			}
 		}
 
@@ -1236,14 +1547,14 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 
 		// Find the next non-empty token.
 		$open_bracket = $this->phpcsFile->findNext(
-			PHP_CodeSniffer_Tokens::$emptyTokens,
+			Tokens::$emptyTokens,
 			( $stackPtr + 1 ),
 			null,
 			true
 		);
 
 		// If it isn't a bracket, this isn't an array-access.
-		if ( T_OPEN_SQUARE_BRACKET !== $this->tokens[ $open_bracket ]['code'] ) {
+		if ( false === $open_bracket || T_OPEN_SQUARE_BRACKET !== $this->tokens[ $open_bracket ]['code'] ) {
 			return false;
 		}
 
@@ -1341,7 +1652,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 
 			$scope_end = $stackPtr;
 
-		} // End if().
+		}
 
 		for ( $i = ( $scope_start + 1 ); $i < $scope_end; $i++ ) {
 
@@ -1402,19 +1713,19 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		// Find the previous non-empty token. We check before the var first because
 		// yoda conditions are usually expected.
 		$previous_token = $this->phpcsFile->findPrevious(
-			PHP_CodeSniffer_Tokens::$emptyTokens,
+			Tokens::$emptyTokens,
 			( $stackPtr - 1 ),
 			null,
 			true
 		);
 
-		if ( in_array( $this->tokens[ $previous_token ]['code'], PHP_CodeSniffer_Tokens::$comparisonTokens, true ) ) {
+		if ( isset( Tokens::$comparisonTokens[ $this->tokens[ $previous_token ]['code'] ] ) ) {
 			return true;
 		}
 
 		// Maybe the comparison operator is after this.
 		$next_token = $this->phpcsFile->findNext(
-			PHP_CodeSniffer_Tokens::$emptyTokens,
+			Tokens::$emptyTokens,
 			( $stackPtr + 1 ),
 			null,
 			true
@@ -1424,14 +1735,14 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		while ( T_OPEN_SQUARE_BRACKET === $this->tokens[ $next_token ]['code'] ) {
 
 			$next_token = $this->phpcsFile->findNext(
-				PHP_CodeSniffer_Tokens::$emptyTokens,
+				Tokens::$emptyTokens,
 				( $this->tokens[ $next_token ]['bracket_closer'] + 1 ),
 				null,
 				true
 			);
 		}
 
-		if ( in_array( $this->tokens[ $next_token ]['code'], PHP_CodeSniffer_Tokens::$comparisonTokens, true ) ) {
+		if ( isset( Tokens::$comparisonTokens[ $this->tokens[ $next_token ]['code'] ] ) ) {
 			return true;
 		}
 
@@ -1481,7 +1792,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	 *
 	 * @since 0.9.0
 	 *
-	 * @param string $string A T_DOUBLE_QUOTED_STRING token.
+	 * @param string $string A T_DOUBLE_QUOTED_STRING or T_HEREDOC token.
 	 *
 	 * @return array Variable names (without '$' sigil).
 	 */
@@ -1489,7 +1800,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		$variables = array();
 		if ( preg_match_all( '/(?P<backslashes>\\\\*)\$(?P<symbol>\w+)/', $string, $match_sets, PREG_SET_ORDER ) ) {
 			foreach ( $match_sets as $matches ) {
-				if ( ( strlen( $matches['backslashes'] ) % 2 ) === 0 ) {
+				if ( ! isset( $matches['backslashes'] ) || ( strlen( $matches['backslashes'] ) % 2 ) === 0 ) {
 					$variables[] = $matches['symbol'];
 				}
 			}
@@ -1527,7 +1838,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 			return false;
 		}
 
-		$next_non_empty = $this->phpcsFile->findNext( PHP_CodeSniffer_Tokens::$emptyTokens, ( $stackPtr + 1 ), null, true, null, true );
+		$next_non_empty = $this->phpcsFile->findNext( Tokens::$emptyTokens, ( $stackPtr + 1 ), null, true, null, true );
 
 		// Deal with short array syntax.
 		if ( 'T_OPEN_SHORT_ARRAY' === $this->tokens[ $stackPtr ]['type'] ) {
@@ -1554,7 +1865,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 		}
 
 		$close_parenthesis   = $this->tokens[ $next_non_empty ]['parenthesis_closer'];
-		$next_next_non_empty = $this->phpcsFile->findNext( PHP_CodeSniffer_Tokens::$emptyTokens, ( $next_non_empty + 1 ), ( $close_parenthesis + 1 ), true );
+		$next_next_non_empty = $this->phpcsFile->findNext( Tokens::$emptyTokens, ( $next_non_empty + 1 ), ( $close_parenthesis + 1 ), true );
 
 		if ( $next_next_non_empty === $close_parenthesis ) {
 			// No parameters.
@@ -1630,7 +1941,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 
 			$nestedParenthesisCount = 0;
 		} else {
-			$opener = $this->phpcsFile->findNext( PHP_CodeSniffer_Tokens::$emptyTokens, ( $stackPtr + 1 ), null, true, null, true );
+			$opener = $this->phpcsFile->findNext( Tokens::$emptyTokens, ( $stackPtr + 1 ), null, true, null, true );
 			$closer = $this->tokens[ $opener ]['parenthesis_closer'];
 
 			$nestedParenthesisCount = 1;
@@ -1680,7 +1991,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 			 * Prevents code like the following from setting a third parameter:
 			 * functionCall( $param1, $param2, );
 			 */
-			$has_next_param = $this->phpcsFile->findNext( PHP_CodeSniffer_Tokens::$emptyTokens, ( $next_comma + 1 ), $closer, true, null, true );
+			$has_next_param = $this->phpcsFile->findNext( Tokens::$emptyTokens, ( $next_comma + 1 ), $closer, true, null, true );
 			if ( false === $has_next_param ) {
 				break;
 			}
@@ -1688,7 +1999,7 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 			// Prepare for the next parameter.
 			$param_start = ( $next_comma + 1 );
 			$cnt++;
-		} // End while().
+		}
 
 		return $parameters;
 	}
@@ -1721,32 +2032,175 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	}
 
 	/**
+	 * Find the array opener & closer based on a T_ARRAY or T_OPEN_SHORT_ARRAY token.
+	 *
+	 * @param int $stackPtr The stack pointer to the array token.
+	 *
+	 * @return array|bool Array with two keys `opener`, `closer` or false if
+	 *                    either or these could not be determined.
+	 */
+	protected function find_array_open_close( $stackPtr ) {
+		/*
+		 * Determine the array opener & closer.
+		 */
+		if ( T_ARRAY === $this->tokens[ $stackPtr ]['code'] ) {
+			if ( isset( $this->tokens[ $stackPtr ]['parenthesis_opener'] ) ) {
+				$opener = $this->tokens[ $stackPtr ]['parenthesis_opener'];
+
+				if ( isset( $this->tokens[ $opener ]['parenthesis_closer'] ) ) {
+					$closer = $this->tokens[ $opener ]['parenthesis_closer'];
+				}
+			}
+		} else {
+			// Short array syntax.
+			$opener = $stackPtr;
+
+			if ( isset( $this->tokens[ $stackPtr ]['bracket_closer'] ) ) {
+				$closer = $this->tokens[ $stackPtr ]['bracket_closer'];
+			}
+		}
+
+		if ( isset( $opener, $closer ) ) {
+			return array(
+				'opener' => $opener,
+				'closer' => $closer,
+			);
+		}
+
+		return false;
+	}
+
+	/**
+	 * Determine the namespace name an arbitrary token lives in.
+	 *
+	 * @since 0.10.0
+	 * @since 0.12.0 Moved from the WordPress_AbstractClassRestrictionsSniff to this sniff.
+	 *
+	 * @param int $stackPtr The token position for which to determine the namespace.
+	 *
+	 * @return string Namespace name or empty string if it couldn't be determined or no namespace applies.
+	 */
+	public function determine_namespace( $stackPtr ) {
+
+		// Check for the existence of the token.
+		if ( ! isset( $this->tokens[ $stackPtr ] ) ) {
+			return '';
+		}
+
+		// Check for scoped namespace {}.
+		if ( ! empty( $this->tokens[ $stackPtr ]['conditions'] ) ) {
+			$namespacePtr = $this->phpcsFile->getCondition( $stackPtr, T_NAMESPACE );
+			if ( false !== $namespacePtr ) {
+				$namespace = $this->get_declared_namespace_name( $namespacePtr );
+				if ( false !== $namespace ) {
+					return $namespace;
+				}
+
+				// We are in a scoped namespace, but couldn't determine the name.
+				// Searching for a global namespace is futile.
+				return '';
+			}
+		}
+
+		/*
+		 * Not in a scoped namespace, so let's see if we can find a non-scoped namespace instead.
+		 * Keeping in mind that:
+		 * - there can be multiple non-scoped namespaces in a file (bad practice, but it happens).
+		 * - the namespace keyword can also be used as part of a function/method call and such.
+		 * - that a non-named namespace resolves to the global namespace.
+		 */
+		$previousNSToken = $stackPtr;
+		$namespace       = false;
+		do {
+			$previousNSToken = $this->phpcsFile->findPrevious( T_NAMESPACE, ( $previousNSToken - 1 ) );
+
+			// Stop if we encounter a scoped namespace declaration as we already know we're not in one.
+			if ( ! empty( $this->tokens[ $previousNSToken ]['scope_condition'] )
+				&& $this->tokens[ $previousNSToken ]['scope_condition'] === $previousNSToken
+			) {
+				break;
+			}
+
+			$namespace = $this->get_declared_namespace_name( $previousNSToken );
+
+		} while ( false === $namespace && false !== $previousNSToken );
+
+		// If we still haven't got a namespace, return an empty string.
+		if ( false === $namespace ) {
+			return '';
+		}
+
+		return $namespace;
+	}
+
+	/**
+	 * Get the complete namespace name for a namespace declaration.
+	 *
+	 * For hierarchical namespaces, the name will be composed of several tokens,
+	 * i.e. MyProject\Sub\Level which will be returned together as one string.
+	 *
+	 * @since 0.12.0 A lesser variant of this method previously existed in the
+	 *               WordPress_AbstractClassRestrictionsSniff.
+	 *
+	 * @param int|bool $stackPtr The position of a T_NAMESPACE token.
+	 *
+	 * @return string|false Namespace name or false if not a namespace declaration.
+	 *                      Namespace name can be an empty string for global namespace declaration.
+	 */
+	public function get_declared_namespace_name( $stackPtr ) {
+
+		// Check for the existence of the token.
+		if ( false === $stackPtr || ! isset( $this->tokens[ $stackPtr ] ) ) {
+			return false;
+		}
+
+		if ( T_NAMESPACE !== $this->tokens[ $stackPtr ]['code'] ) {
+			return false;
+		}
+
+		if ( T_NS_SEPARATOR === $this->tokens[ ( $stackPtr + 1 ) ]['code'] ) {
+			// Not a namespace declaration, but use of, i.e. `namespace\someFunction();`.
+			return false;
+		}
+
+		$nextToken = $this->phpcsFile->findNext( Tokens::$emptyTokens, ( $stackPtr + 1 ), null, true, null, true );
+		if ( T_OPEN_CURLY_BRACKET === $this->tokens[ $nextToken ]['code'] ) {
+			// Declaration for global namespace when using multiple namespaces in a file.
+			// I.e.: `namespace {}`.
+			return '';
+		}
+
+		// Ok, this should be a namespace declaration, so get all the parts together.
+		$validTokens = array(
+			T_STRING       => true,
+			T_NS_SEPARATOR => true,
+			T_WHITESPACE   => true,
+		);
+
+		$namespaceName = '';
+		while ( isset( $validTokens[ $this->tokens[ $nextToken ]['code'] ] ) ) {
+			$namespaceName .= trim( $this->tokens[ $nextToken ]['content'] );
+			$nextToken++;
+		}
+
+		return $namespaceName;
+	}
+
+	/**
 	 * Check if a content string contains a specific html open tag.
 	 *
-	 * {@internal For PHP 5.3+ this is straightforward, just check if $content
-	 * contains the tag.
-	 * PHP 5.2 however, creates a separate token for `<s` when used in inline HTML,
-	 * so in that case we need to check that the next token starts with the rest
-	 * of the tag.
-	 * I.e. PHP 5.2 tokenizes the inline HTML `text <span>text</span> text` as:
-	 * - T_INLINE_HTML 'text'
-	 * - T_INLINE_HTML '<s'
-	 * - T_INLINE_HTML 'pan>text</span> text'
-	 *
-	 * We don't need to worry about checking the rest of the content of the next
-	 * token as sniffs using this function will be sniffing for all text string
-	 * tokens, so the next token will be passed to the sniff in the next iteration
-	 * and checked then.
-	 * Similarly, no need to check content before the '<s' as the bug will break up the
-	 * inline html to several string tokens if it plays up.}}
-	 *
-	 * @link  https://bugs.php.net/bug.php?id=48446
-	 *
 	 * @since 0.11.0
+	 * @since 0.13.0 No longer allows for the PHP 5.2 bug for which the function was
+	 *               originally created.
+	 * @since 0.13.0 The $stackPtr parameter is now optional. Either that or the
+	 *               $content parameter has to be passed.
 	 *
 	 * @param string $tag_name The name of the HTML tag without brackets. So if
 	 *                         searching for '<span...', this would be 'span'.
-	 * @param int    $stackPtr The position of the current token in the token stack.
+	 * @param int    $stackPtr Optional. The position of the current token in the
+	 *                         token stack.
+	 *                         This parameter needs to be passed if no $content is
+	 *                         passed.
 	 * @param string $content  Optionally, the current content string, might be a
 	 *                         substring of the original string.
 	 *                         Defaults to `false` to distinguish between a passed
@@ -1754,28 +2208,13 @@ abstract class WordPress_Sniff implements PHP_CodeSniffer_Sniff {
 	 *
 	 * @return bool True if the string contains an <tag_name> open tag, false otherwise.
 	 */
-	public function has_html_open_tag( $tag_name, $stackPtr, $content = false ) {
-		if ( false === $content ) {
+	public function has_html_open_tag( $tag_name, $stackPtr = null, $content = false ) {
+		if ( false === $content && isset( $stackPtr ) ) {
 			$content = $this->tokens[ $stackPtr ]['content'];
 		}
 
-		// Check for the open tag in normal string tokens and T_INLINE_HTML for PHP 5.3+.
-		if ( 's' !== $tag_name[0] || PHP_VERSION_ID >= 50300 || T_INLINE_HTML !== $this->tokens[ $stackPtr ]['code'] ) {
-			if ( false !== strpos( $content, '<' . $tag_name ) ) {
-				return true;
-			}
-		} elseif ( '<s' === $content ) {
-			// Ok, we might be coming across the token parser issue. Check the next token.
-			$next_ptr      = ( $stackPtr + 1 );
-			$rest_tag_name = substr( $tag_name, 1 );
-
-			if ( ! empty( $rest_tag_name )
-				&& isset( $this->tokens[ $next_ptr ] )
-				&& T_INLINE_HTML === $this->tokens[ $next_ptr ]['code']
-				&& 0 === strpos( $this->tokens[ $next_ptr ]['content'], $rest_tag_name )
-			) {
-				return true;
-			}
+		if ( ! empty( $content ) && false !== strpos( $content, '<' . $tag_name ) ) {
+			return true;
 		}
 
 		return false;

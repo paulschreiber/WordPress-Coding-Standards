@@ -7,6 +7,10 @@
  * @license https://opensource.org/licenses/MIT MIT
  */
 
+namespace WordPress\Sniffs\VIP;
+
+use WordPress\AbstractArrayAssignmentRestrictionsSniff;
+
 /**
  * Flag potentially slow queries.
  *
@@ -15,22 +19,15 @@
  * @package WPCS\WordPressCodingStandards
  *
  * @since   0.3.0
+ * @since   0.12.0 Introduced new and more intuitively named 'slow query' whitelist
+ *                 comment, replacing the 'tax_query' whitelist comment which is now
+ *                 deprecated.
+ * @since   0.13.0 Class name changed: this class is now namespaced.
  */
-class WordPress_Sniffs_VIP_SlowDBQuerySniff extends WordPress_AbstractArrayAssignmentRestrictionsSniff {
+class SlowDBQuerySniff extends AbstractArrayAssignmentRestrictionsSniff {
 
 	/**
 	 * Groups of variables to restrict.
-	 * This should be overridden in extending classes.
-	 *
-	 * Example: groups => array(
-	 * 	'wpdb' => array(
-	 * 		'type'          => 'error' | 'warning',
-	 * 		'message'       => 'Dont use this one please!',
-	 * 		'variables'     => array( '$val', '$var' ),
-	 * 		'object_vars'   => array( '$foo->bar', .. ),
-	 * 		'array_members' => array( '$foo['bar']', .. ),
-	 * 	)
-	 * )
 	 *
 	 * @return array
 	 */
@@ -61,7 +58,23 @@ class WordPress_Sniffs_VIP_SlowDBQuerySniff extends WordPress_AbstractArrayAssig
 	 */
 	public function process_token( $stackPtr ) {
 
+		if ( $this->has_whitelist_comment( 'slow query', $stackPtr ) ) {
+			return;
+		}
+
 		if ( $this->has_whitelist_comment( 'tax_query', $stackPtr ) ) {
+			/*
+			 * Only throw the warning about a deprecated comment when the sniff would otherwise
+			 * have been triggered on the array key.
+			 */
+			if ( in_array( $this->tokens[ $stackPtr ]['code'], array( T_CONSTANT_ENCAPSED_STRING, T_DOUBLE_QUOTED_STRING ), true ) ) {
+				$this->phpcsFile->addWarning(
+					'The "tax_query" whitelist comment is deprecated in favor of the "slow query" whitelist comment.',
+					$stackPtr,
+					'DeprecatedWhitelistFlagFound'
+				);
+			}
+
 			return;
 		}
 

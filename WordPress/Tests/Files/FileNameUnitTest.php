@@ -7,14 +7,20 @@
  * @license https://opensource.org/licenses/MIT MIT
  */
 
+namespace WordPress\Tests\Files;
+
+use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
+
 /**
  * Unit test class for the FileName sniff.
  *
  * @package WPCS\WordPressCodingStandards
+ *
  * @since   2013-06-11
  * @since   0.11.0     Actually added tests ;-)
+ * @since   0.13.0     Class name changed: this class is now namespaced.
  */
-class WordPress_Tests_Files_FileNameUnitTest extends AbstractSniffUnitTest {
+class FileNameUnitTest extends AbstractSniffUnitTest {
 
 	/**
 	 * Error files with the expected nr of errors.
@@ -49,6 +55,14 @@ class WordPress_Tests_Files_FileNameUnitTest extends AbstractSniffUnitTest {
 		'ClassNonStrictClass.inc' => 1,
 
 		/*
+		 * In /FileNameUnitTests/TestFiles.
+		 */
+		'test-sample-phpunit.inc'     => 0,
+		'test-sample-phpunit6.inc'    => 0,
+		'test-sample-wpunit.inc'      => 0,
+		'test-sample-custom-unit.inc' => 0,
+
+		/*
 		 * In /FileNameUnitTests/ThemeExceptions.
 		 */
 
@@ -80,8 +94,8 @@ class WordPress_Tests_Files_FileNameUnitTest extends AbstractSniffUnitTest {
 	 * @return string[]
 	 */
 	protected function getTestFiles( $testFileBase ) {
-		$sep             = DIRECTORY_SEPARATOR;
-		$test_files      = glob( dirname( $testFileBase ) . $sep . 'FileNameUnitTests{' . $sep . ',' . $sep . 'ThemeExceptions' . $sep . ',' . $sep . 'wp-includes' . $sep . '}*.inc', GLOB_BRACE );
+		$sep        = DIRECTORY_SEPARATOR;
+		$test_files = glob( dirname( $testFileBase ) . $sep . 'FileNameUnitTests{' . $sep . ',' . $sep . '*' . $sep . '}*.inc', GLOB_BRACE );
 
 		if ( ! empty( $test_files ) ) {
 			return $test_files;

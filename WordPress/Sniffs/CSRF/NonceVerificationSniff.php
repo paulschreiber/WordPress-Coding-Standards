@@ -7,6 +7,10 @@
  * @license https://opensource.org/licenses/MIT MIT
  */
 
+namespace WordPress\Sniffs\CSRF;
+
+use WordPress\Sniff;
+
 /**
  * Checks that nonce verification accompanies form processing.
  *
@@ -15,8 +19,25 @@
  * @package WPCS\WordPressCodingStandards
  *
  * @since   0.5.0
+ * @since   0.13.0 Class name changed: this class is now namespaced.
  */
-class WordPress_Sniffs_CSRF_NonceVerificationSniff extends WordPress_Sniff {
+class NonceVerificationSniff extends Sniff {
+
+	/**
+	 * Superglobals to notify about when not accompanied by an nonce check.
+	 *
+	 * A value of `true` results in an error. A value of `false` in a warning.
+	 *
+	 * @since 0.12.0
+	 *
+	 * @var array
+	 */
+	protected $superglobals = array(
+		'$_POST'    => true,
+		'$_FILE'    => true,
+		'$_GET'     => false,
+		'$_REQUEST' => false,
+	);
 
 	/**
 	 * Superglobals to give an error for when not accompanied by an nonce check.
@@ -24,9 +45,11 @@ class WordPress_Sniffs_CSRF_NonceVerificationSniff extends WordPress_Sniff {
 	 * @since 0.5.0
 	 * @since 0.11.0 Changed visibility from public to protected.
 	 *
+	 * @deprecated 0.12.0 Replaced by $superglobals property.
+	 *
 	 * @var array
 	 */
-	protected $errorForSuperGlobals = array( '$_POST', '$_FILE' );
+	protected $errorForSuperGlobals = array();
 
 	/**
 	 * Superglobals to give a warning for when not accompanied by an nonce check.
@@ -36,9 +59,11 @@ class WordPress_Sniffs_CSRF_NonceVerificationSniff extends WordPress_Sniff {
 	 * @since 0.5.0
 	 * @since 0.11.0 Changed visibility from public to protected.
 	 *
+	 * @deprecated 0.12.0 Replaced by $superglobals property.
+	 *
 	 * @var array
 	 */
-	protected $warnForSuperGlobals = array( '$_GET', '$_REQUEST' );
+	protected $warnForSuperGlobals = array();
 
 	/**
 	 * Custom list of functions which verify nonces.
@@ -107,12 +132,7 @@ class WordPress_Sniffs_CSRF_NonceVerificationSniff extends WordPress_Sniff {
 
 		$instance = $this->tokens[ $stackPtr ];
 
-		$superglobals = array_merge(
-			$this->errorForSuperGlobals
-			, $this->warnForSuperGlobals
-		);
-
-		if ( ! in_array( $instance['content'], $superglobals, true ) ) {
+		if ( ! isset( $this->superglobals[ $instance['content'] ] ) ) {
 			return;
 		}
 
@@ -138,11 +158,11 @@ class WordPress_Sniffs_CSRF_NonceVerificationSniff extends WordPress_Sniff {
 		$this->addMessage(
 			'Processing form data without nonce verification.',
 			$stackPtr,
-			( in_array( $instance['content'], $this->errorForSuperGlobals, true ) ),
+			$this->superglobals[ $instance['content'] ],
 			'NoNonceVerification'
 		);
 
-	} // End process().
+	} // End process_token().
 
 	/**
 	 * Merge custom functions provided via a custom ruleset with the defaults, if we haven't already.

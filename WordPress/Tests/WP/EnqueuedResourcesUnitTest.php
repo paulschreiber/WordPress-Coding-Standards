@@ -7,24 +7,19 @@
  * @license https://opensource.org/licenses/MIT MIT
  */
 
+namespace WordPress\Tests\WP;
+
+use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
+
 /**
  * Unit test class for the EnqueuedResources sniff.
  *
  * @package WPCS\WordPressCodingStandards
+ *
  * @since   0.3.0
+ * @since   0.13.0 Class name changed: this class is now namespaced.
  */
-class WordPress_Tests_WP_EnqueuedResourcesUnitTest extends AbstractSniffUnitTest {
-
-	/**
-	 * Skip this test on PHP 5.2.
-	 *
-	 * @since 0.9.0
-	 *
-	 * @return bool Whether to skip this test.
-	 */
-	protected function shouldSkipTest() {
-		return ( PHP_VERSION_ID < 50300 );
-	}
+class EnqueuedResourcesUnitTest extends AbstractSniffUnitTest {
 
 	/**
 	 * Returns the lines where errors should occur.
@@ -39,6 +34,16 @@ class WordPress_Tests_WP_EnqueuedResourcesUnitTest extends AbstractSniffUnitTest
 			7 => 1,
 			10 => 1,
 			11 => 1,
+			13 => 1,
+			14 => 1,
+			16 => 1,
+			17 => 1,
+			20 => 1,
+			21 => 1,
+			25 => 1,
+			26 => 1,
+			30 => 1,
+			31 => 1,
 		);
 
 	}
