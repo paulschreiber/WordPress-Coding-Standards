@@ -3,15 +3,15 @@
  * WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Sniffs\NamingConventions;
+namespace WordPressCS\WordPress\Sniffs\NamingConventions;
 
-use WordPress\AbstractFunctionParameterSniff;
-use WordPress\PHPCSHelper;
-use PHP_CodeSniffer_Tokens as Tokens;
+use WordPressCS\WordPress\AbstractFunctionParameterSniff;
+use WordPressCS\WordPress\PHPCSHelper;
+use PHP_CodeSniffer\Util\Tokens;
 
 /**
  * Verify that everything defined in the global namespace is prefixed with a theme/plugin specific prefix.
@@ -20,8 +20,11 @@ use PHP_CodeSniffer_Tokens as Tokens;
  *
  * @since   0.12.0
  * @since   0.13.0 Class name changed: this class is now namespaced.
+ * @since   1.2.0  Now also checks whether namespaces are prefixed.
+ * @since   2.2.0  - Now also checks variables assigned via the list() construct.
+ *                 - Now also ignores global functions which are marked as @deprecated.
  *
- * @uses    \WordPress\Sniff::$custom_test_class_whitelist
+ * @uses    \WordPressCS\WordPress\Sniff::$custom_test_class_whitelist
  */
 class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 
@@ -31,6 +34,17 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	 * @var string
 	 */
 	const ERROR_MSG = '%s by a theme/plugin should start with the theme/plugin prefix. Found: "%s".';
+
+	/**
+	 * Minimal number of characters the prefix needs in order to be valid.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @link https://github.com/WordPress/WordPress-Coding-Standards/issues/1733 Issue 1733.
+	 *
+	 * @var int
+	 */
+	const MIN_PREFIX_LENGTH = 3;
 
 	/**
 	 * Target prefixes.
@@ -49,8 +63,10 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	 * @var string[]
 	 */
 	protected $prefix_blacklist = array(
-		'wp' => true,
-		'_'  => true,
+		'wordpress' => true,
+		'wp'        => true,
+		'_'         => true,
+		'php'       => true, // See #1728, the 'php' prefix is reserved by PHP itself.
 	);
 
 	/**
@@ -63,6 +79,20 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	 * @var string[]
 	 */
 	private $validated_prefixes = array();
+
+	/**
+	 * Target namespace prefixes after validation with regex indicator.
+	 *
+	 * All prefixes are lowercased for case-insensitive compare.
+	 * If the prefix doesn't already contain a namespace separator, but does contain
+	 * non-word characters, these will have been replaced with regex syntax to allow
+	 * for namespace separators and the `is_regex` indicator will have been set to `true`.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @var array
+	 */
+	private $validated_namespace_prefixes = array();
 
 	/**
 	 * Cache of previously set prefixes.
@@ -148,6 +178,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 		'ADMIN_COOKIE_PATH'    => true,
 		'PLUGINS_COOKIE_PATH'  => true,
 		'COOKIE_DOMAIN'        => true,
+		'RECOVERY_MODE_COOKIE' => true,
 		'FORCE_SSL_ADMIN'      => true,
 		'FORCE_SSL_LOGIN'      => true,
 		'AUTOSAVE_INTERVAL'    => true,
@@ -158,6 +189,18 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	);
 
 	/**
+	 * List of all PHP native functions.
+	 *
+	 * Using this list rather than a call to `function_exists()` prevents
+	 * false negatives from user-defined functions when those would be
+	 * autoloaded via a Composer autoload files directives.
+	 *
+	 * @var array
+	 */
+	private $built_in_functions;
+
+
+	/**
 	 * Returns an array of tokens this test wants to listen for.
 	 *
 	 * @since 0.12.0
@@ -165,16 +208,21 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	 * @return array
 	 */
 	public function register() {
-		$targets = array(
-			\T_FUNCTION   => \T_FUNCTION,
-			\T_CLASS      => \T_CLASS,
-			\T_INTERFACE  => \T_INTERFACE,
-			\T_TRAIT      => \T_TRAIT,
-			\T_CONST      => \T_CONST,
-			\T_VARIABLE   => \T_VARIABLE,
-			\T_DOLLAR     => \T_DOLLAR, // Variable variables.
-			\T_ANON_CLASS => \T_ANON_CLASS, // Only used for skipping over test classes.
+		// Get a list of all PHP native functions.
+		$all_functions            = get_defined_functions();
+		$this->built_in_functions = array_flip( $all_functions['internal'] );
+
+		// Set the sniff targets.
+		$targets  = array(
+			\T_NAMESPACE        => \T_NAMESPACE,
+			\T_FUNCTION         => \T_FUNCTION,
+			\T_CONST            => \T_CONST,
+			\T_VARIABLE         => \T_VARIABLE,
+			\T_DOLLAR           => \T_DOLLAR, // Variable variables.
+			\T_LIST             => \T_LIST,
+			\T_OPEN_SHORT_ARRAY => \T_OPEN_SHORT_ARRAY,
 		);
+		$targets += Tokens::$ooScopeTokens; // T_ANON_CLASS is only used for skipping over test classes.
 
 		// Add function call target for hook names and constants defined using define().
 		$parent = parent::register();
@@ -193,7 +241,12 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	 * @return array
 	 */
 	public function getGroups() {
-		$this->target_functions           = $this->hookInvokeFunctions;
+		$this->target_functions = $this->hookInvokeFunctions;
+		unset(
+			$this->target_functions['do_action_deprecated'],
+			$this->target_functions['apply_filters_deprecated']
+		);
+
 		$this->target_functions['define'] = true;
 
 		return parent::getGroups();
@@ -226,7 +279,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 		// Allow overruling the prefixes set in a ruleset via the command line.
 		$cl_prefixes = trim( PHPCSHelper::get_config_data( 'prefixes' ) );
 		if ( ! empty( $cl_prefixes ) ) {
-			$this->prefixes = $cl_prefixes;
+			$this->prefixes = array_filter( array_map( 'trim', explode( ',', $cl_prefixes ) ) );
 		}
 
 		$this->prefixes = $this->merge_custom_array( $this->prefixes, array(), false );
@@ -242,9 +295,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 		}
 
 		// Ignore test classes.
-		if ( ( \T_CLASS === $this->tokens[ $stackPtr ]['code']
-			|| \T_TRAIT === $this->tokens[ $stackPtr ]['code']
-			|| \T_ANON_CLASS === $this->tokens[ $stackPtr ]['code'] )
+		if ( isset( Tokens::$ooScopeTokens[ $this->tokens[ $stackPtr ]['code'] ] )
 			&& true === $this->is_test_class( $stackPtr )
 		) {
 			if ( $this->tokens[ $stackPtr ]['scope_condition'] === $stackPtr && isset( $this->tokens[ $stackPtr ]['scope_closer'] ) ) {
@@ -273,6 +324,51 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 
 			return $this->process_variable_assignment( $stackPtr );
 
+		} elseif ( \T_LIST === $this->tokens[ $stackPtr ]['code']
+			|| \T_OPEN_SHORT_ARRAY === $this->tokens[ $stackPtr ]['code']
+		) {
+			return $this->process_list_assignment( $stackPtr );
+
+		} elseif ( \T_NAMESPACE === $this->tokens[ $stackPtr ]['code'] ) {
+			$namespace_name = $this->get_declared_namespace_name( $stackPtr );
+
+			if ( false === $namespace_name || '' === $namespace_name || '\\' === $namespace_name ) {
+				return;
+			}
+
+			foreach ( $this->validated_namespace_prefixes as $key => $prefix_info ) {
+				if ( false === $prefix_info['is_regex'] ) {
+					if ( stripos( $namespace_name, $prefix_info['prefix'] ) === 0 ) {
+						$this->phpcsFile->recordMetric( $stackPtr, 'Prefix all globals: allowed prefixes', $key );
+						return;
+					}
+				} else {
+					// Ok, so this prefix should be used as a regex.
+					$regex = '`^' . $prefix_info['prefix'] . '`i';
+					if ( preg_match( $regex, $namespace_name ) > 0 ) {
+						$this->phpcsFile->recordMetric( $stackPtr, 'Prefix all globals: allowed prefixes', $key );
+						return;
+					}
+				}
+			}
+
+			// Still here ? In that case, we have a non-prefixed namespace name.
+			$recorded = $this->phpcsFile->addError(
+				self::ERROR_MSG,
+				$stackPtr,
+				'NonPrefixedNamespaceFound',
+				array(
+					'Namespaces declared',
+					$namespace_name,
+				)
+			);
+
+			if ( true === $recorded ) {
+				$this->record_potential_prefix_metric( $stackPtr, $namespace_name );
+			}
+
+			return;
+
 		} else {
 
 			// Namespaced methods, classes and constants do not need to be prefixed.
@@ -288,17 +384,26 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 			switch ( $this->tokens[ $stackPtr ]['type'] ) {
 				case 'T_FUNCTION':
 					// Methods in a class do not need to be prefixed.
-					if ( $this->phpcsFile->hasCondition( $stackPtr, array( \T_CLASS, \T_ANON_CLASS, \T_INTERFACE, \T_TRAIT ) ) === true ) {
+					if ( $this->phpcsFile->hasCondition( $stackPtr, Tokens::$ooScopeTokens ) === true ) {
+						return;
+					}
+
+					if ( $this->is_function_deprecated( $this->phpcsFile, $stackPtr ) === true ) {
+						/*
+						 * Deprecated functions don't have to comply with the naming conventions,
+						 * otherwise functions deprecated in favour of a function with a compliant
+						 * name would still trigger an error.
+						 */
 						return;
 					}
 
 					$item_name = $this->phpcsFile->getDeclarationName( $stackPtr );
-					if ( function_exists( '\\' . $item_name ) ) {
+					if ( isset( $this->built_in_functions[ $item_name ] ) ) {
 						// Backfill for PHP native function.
 						return;
 					}
 
-					$error_text = 'Functions declared';
+					$error_text = 'Functions declared in the global namespace';
 					$error_code = 'NonPrefixedFunctionFound';
 					break;
 
@@ -328,7 +433,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 							break;
 
 						case 'T_TRAIT':
-							// phpcs:ignore PHPCompatibility.PHP.NewFunctions.trait_existsFound
+							// phpcs:ignore PHPCompatibility.FunctionUse.NewFunctions.trait_existsFound
 							if ( function_exists( '\trait_exists' ) && trait_exists( '\\' . $item_name, false ) ) {
 								// Backfill for PHP native trait.
 								return;
@@ -486,7 +591,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 			$stackPtr,
 			'NonPrefixedVariableFound',
 			array(
-				'Variables defined',
+				'Global variables defined',
 				$variable_name,
 			)
 		);
@@ -503,20 +608,24 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	 * Check that defined global variables are prefixed.
 	 *
 	 * @since 0.12.0
+	 * @since 2.2.0  Added $in_list parameter.
 	 *
-	 * @param int $stackPtr The position of the current token in the stack.
+	 * @param int  $stackPtr The position of the current token in the stack.
+	 * @param bool $in_list  Whether or not this is a variable in a list assignment.
+	 *                       Defaults to false.
 	 *
 	 * @return int|void Integer stack pointer to skip forward or void to continue
 	 *                  normal file processing.
 	 */
-	protected function process_variable_assignment( $stackPtr ) {
+	protected function process_variable_assignment( $stackPtr, $in_list = false ) {
 		/*
 		 * We're only concerned with variables which are being defined.
 		 * `is_assigment()` will not recognize property assignments, which is good in this case.
 		 * However it will also not recognize $b in `foreach( $a as $b )` as an assignment, so
 		 * we need a separate check for that.
 		 */
-		if ( false === $this->is_assignment( $stackPtr )
+		if ( false === $in_list
+			&& false === $this->is_assignment( $stackPtr )
 			&& false === $this->is_foreach_as( $stackPtr )
 		) {
 			return;
@@ -572,7 +681,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 			}
 		} else {
 			// Function parameters do not need to be prefixed.
-			if ( isset( $this->tokens[ $stackPtr ]['nested_parenthesis'] ) ) {
+			if ( false === $in_list && isset( $this->tokens[ $stackPtr ]['nested_parenthesis'] ) ) {
 				foreach ( $this->tokens[ $stackPtr ]['nested_parenthesis'] as $opener => $closer ) {
 					if ( isset( $this->tokens[ $opener ]['parenthesis_owner'] )
 						&& ( \T_FUNCTION === $this->tokens[ $this->tokens[ $opener ]['parenthesis_owner'] ]['code']
@@ -585,7 +694,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 			}
 
 			// Properties in a class do not need to be prefixed.
-			if ( true === $this->is_class_property( $stackPtr ) ) {
+			if ( false === $in_list && true === $this->is_class_property( $stackPtr ) ) {
 				return;
 			}
 
@@ -636,7 +745,7 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 			$is_error,
 			'NonPrefixedVariableFound',
 			array(
-				'Variables defined',
+				'Global variables defined',
 				'$' . $variable_name,
 			)
 		);
@@ -647,23 +756,47 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 	}
 
 	/**
+	 * Check that global variables declared via a list construct are prefixed.
+	 *
+	 * @internal No need to take special measures for nested lists. Nested or not,
+	 * each list part can only contain one variable being written to.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param int $stackPtr The position of the current token in the stack.
+	 *
+	 * @return int|void Integer stack pointer to skip forward or void to continue
+	 *                  normal file processing.
+	 */
+	protected function process_list_assignment( $stackPtr ) {
+		$list_open_close = $this->find_list_open_close( $stackPtr );
+		if ( false === $list_open_close ) {
+			// Short array, not short list.
+			return;
+		}
+
+		$var_pointers = $this->get_list_variables( $stackPtr, $list_open_close );
+		foreach ( $var_pointers as $ptr ) {
+			$this->process_variable_assignment( $ptr, true );
+		}
+
+		// No need to re-examine these variables.
+		return $list_open_close['closer'];
+	}
+
+	/**
 	 * Process the parameters of a matched function.
 	 *
 	 * @since 0.12.0
 	 *
 	 * @param int    $stackPtr        The position of the current token in the stack.
-	 * @param array  $group_name      The name of the group which was matched.
+	 * @param string $group_name      The name of the group which was matched.
 	 * @param string $matched_content The token content (function name) which was matched.
 	 * @param array  $parameters      Array with information about the parameters.
 	 *
 	 * @return void
 	 */
 	public function process_parameters( $stackPtr, $group_name, $matched_content, $parameters ) {
-
-		// Ignore deprecated hook names.
-		if ( strpos( $matched_content, '_deprecated' ) > 0 ) {
-			return;
-		}
 
 		// No matter whether it is a constant definition or a hook call, both use the first parameter.
 		if ( ! isset( $parameters[1] ) ) {
@@ -737,14 +870,20 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 
 			$data       = array( 'Global constants defined' );
 			$error_code = 'NonPrefixedConstantFound';
+			if ( false === $is_error ) {
+				$error_code = 'VariableConstantNameFound';
+			}
 		} else {
 			$data       = array( 'Hook names invoked' );
 			$error_code = 'NonPrefixedHooknameFound';
+			if ( false === $is_error ) {
+				$error_code = 'DynamicHooknameFound';
+			}
 		}
 
 		$data[] = $raw_content;
 
-		$recorded = $this->addMessage( self::ERROR_MSG, $parameters[1]['start'], $is_error, $error_code, $data );
+		$recorded = $this->addMessage( self::ERROR_MSG, $first_non_empty, $is_error, $error_code, $data );
 
 		if ( true === $recorded ) {
 			$this->record_potential_prefix_metric( $stackPtr, $raw_content );
@@ -823,6 +962,8 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 		$this->previous_prefixes = $this->prefixes;
 
 		// Validate the passed prefix(es).
+		$prefixes    = array();
+		$ns_prefixes = array();
 		foreach ( $this->prefixes as $key => $prefix ) {
 			$prefixLC = strtolower( $prefix );
 
@@ -833,27 +974,56 @@ class PrefixAllGlobalsSniff extends AbstractFunctionParameterSniff {
 					'ForbiddenPrefixPassed',
 					array( $prefix )
 				);
-				unset( $this->prefixes[ $key ] );
 				continue;
 			}
 
-			// Validate the prefix against characters allowed for function, class, constant names etc.
-			if ( preg_match( '`^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$`', $prefix ) !== 1 ) {
-				$this->phpcsFile->addWarning(
-					'The "%s" prefix is not a valid function/class/variable/constant prefix in PHP.',
+			$prefix_length = strlen( $prefix );
+			if ( function_exists( 'iconv_strlen' ) ) {
+				$prefix_length = iconv_strlen( $prefix, $this->phpcsFile->config->encoding );
+			}
+
+			if ( $prefix_length < self::MIN_PREFIX_LENGTH ) {
+				$this->phpcsFile->addError(
+					'The "%s" prefix is too short. Short prefixes are not unique enough and may cause name collisions with other code.',
 					0,
-					'InvalidPrefixPassed',
+					'ShortPrefixPassed',
 					array( $prefix )
 				);
 				continue;
 			}
 
+			// Validate the prefix against characters allowed for function, class, constant names etc.
+			if ( preg_match( '`^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff\\\\]*$`', $prefix ) !== 1 ) {
+				$this->phpcsFile->addWarning(
+					'The "%s" prefix is not a valid namespace/function/class/variable/constant prefix in PHP.',
+					0,
+					'InvalidPrefixPassed',
+					array( $prefix )
+				);
+			}
+
 			// Lowercase the prefix to allow for direct compare.
-			$this->prefixes[ $key ] = $prefixLC;
+			$prefixes[ $key ] = $prefixLC;
+
+			/*
+			 * Replace non-word characters in the prefix with a regex snippet, but only if the
+			 * string doesn't already contain namespace separators.
+			 */
+			$is_regex = false;
+			if ( strpos( $prefix, '\\' ) === false && preg_match( '`[_\W]`', $prefix ) > 0 ) {
+				$prefix   = preg_replace( '`([_\W])`', '[\\\\\\\\$1]', $prefixLC );
+				$is_regex = true;
+			}
+
+			$ns_prefixes[ $prefixLC ] = array(
+				'prefix'   => $prefix,
+				'is_regex' => $is_regex,
+			);
 		}
 
-		// Set the validated prefixes cache.
-		$this->validated_prefixes = $this->prefixes;
+		// Set the validated prefixes caches.
+		$this->validated_prefixes           = $prefixes;
+		$this->validated_namespace_prefixes = $ns_prefixes;
 	}
 
 	/**

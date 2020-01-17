@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\NamingConventions;
+namespace WordPressCS\WordPress\Tests\NamingConventions;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -32,7 +32,7 @@ class PrefixAllGlobalsUnitTest extends AbstractSniffUnitTest {
 		switch ( $testFile ) {
 			case 'PrefixAllGlobalsUnitTest.1.inc':
 				return array(
-					1   => 1, // 1 x error for blacklisted prefix passed.
+					1   => 8, // 2 x error for blacklisted prefix passed. 4 x error for short prefixes. 2 x no prefix.
 					10  => 1,
 					18  => 1,
 					21  => 1,
@@ -67,6 +67,24 @@ class PrefixAllGlobalsUnitTest extends AbstractSniffUnitTest {
 					357 => 1,
 					387 => 1,
 					389 => 1,
+					403 => 1,
+					415 => 1,
+					423 => 1,
+					440 => 2,
+					444 => 2,
+					448 => 2,
+					449 => 1,
+					452 => 4,
+					455 => 2,
+					464 => 2,
+					465 => 1,
+					468 => 1,
+				);
+
+			case 'PrefixAllGlobalsUnitTest.4.inc':
+				return array(
+					1  => 1, // 1 x error for blacklisted prefix passed.
+					18 => 1,
 				);
 
 			case 'PrefixAllGlobalsUnitTest.2.inc':
@@ -89,7 +107,12 @@ class PrefixAllGlobalsUnitTest extends AbstractSniffUnitTest {
 		switch ( $testFile ) {
 			case 'PrefixAllGlobalsUnitTest.1.inc':
 				return array(
-					1   => 3, // 3 x error for potentially incorrect prefix passed.
+					1   => 3, // 3 x warning for potentially incorrect prefix passed.
+					201 => 1, // Whitelist comment deprecation warning.
+					208 => 1, // Whitelist comment deprecation warning.
+					212 => 1, // Whitelist comment deprecation warning.
+					215 => 1, // Whitelist comment deprecation warning.
+					216 => 1, // Whitelist comment deprecation warning.
 					249 => 1,
 					250 => 1,
 					253 => 1,

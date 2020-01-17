@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\CodeAnalysis;
+namespace WordPressCS\WordPress\Tests\CodeAnalysis;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -56,7 +56,7 @@ class EmptyStatementUnitTest extends AbstractSniffUnitTest {
 			case 'EmptyStatementUnitTest.2.inc':
 				return array(
 					1 => 1, // Internal.NoCode warning when short open tags is off, otherwise EmptyStatement warning.
-					2 => ( \PHP_VERSION_ID < 50400 && false === (bool) ini_get( 'short_open_tag' ) ) ? 0 : 1,
+					2 => 1,
 				);
 
 			default:

@@ -104,3 +104,44 @@ class My_Soap extends somethingElse {
 }
 
 function __MyTemplateTags() {} // Bad x 2.
+
+// Verify that interfaces which extend multiple other interfaces do not throw unnecessary errors.
+interface MyInterface extends InterfaceA, InterfaceB {
+	function __MyTemplateTags(); // OK.
+}
+
+class Nested {
+    public function get_anonymous_class() {
+        return new class() {
+            public function nestedFunction() {}
+            protected function __something() {}
+        };
+    }
+}
+
+abstract class My_Class {
+    public function my_Class() {}
+    public function _MY_CLASS() {}
+}
+
+/**
+ * Function description.
+ *
+ * @since 1.2.3
+ * @deprecated 2.3.4
+ *
+ * @return void
+ */
+function __deprecatedFunction() {}
+
+class Deprecated {
+	/**
+	 * Function description.
+	 *
+	 * @since 1.2.3
+	 * @deprecated 2.3.4
+	 *
+	 * @return void
+	 */
+	public static function __deprecatedMethod() {}
+}

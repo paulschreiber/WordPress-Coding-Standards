@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\WhiteSpace;
+namespace WordPressCS\WordPress\Tests\WhiteSpace;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -28,13 +28,13 @@ class CastStructureSpacingUnitTest extends AbstractSniffUnitTest {
 	 */
 	public function getErrorList() {
 		return array(
-			3  => 2,
-			6  => 2,
-			9  => 2,
-			12 => 2,
-			15 => 2,
-			18 => 2,
-			21 => 2,
+			3  => 1,
+			6  => 1,
+			9  => 1,
+			12 => 1,
+			15 => 1,
+			18 => 1,
+			21 => 1,
 		);
 	}
 

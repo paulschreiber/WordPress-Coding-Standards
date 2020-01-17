@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\Arrays;
+namespace WordPressCS\WordPress\Tests\Arrays;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -41,6 +41,12 @@ class ArrayKeySpacingRestrictionsUnitTest extends AbstractSniffUnitTest {
 			26 => 1,
 			29 => 1,
 			31 => 1,
+			34 => 1,
+			38 => 2,
+			39 => 1,
+			40 => 1,
+			45 => 2,
+			46 => 2,
 		);
 	}
 

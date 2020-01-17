@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\Security;
+namespace WordPressCS\WordPress\Tests\Security;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -78,6 +78,9 @@ class EscapeOutputUnitTest extends AbstractSniffUnitTest {
 			263 => 1,
 			264 => 1,
 			266 => 1,
+			289 => 1,
+			294 => 1,
+			297 => 1,
 		);
 	}
 
@@ -87,7 +90,14 @@ class EscapeOutputUnitTest extends AbstractSniffUnitTest {
 	 * @return array <int line number> => <int number of warnings>
 	 */
 	public function getWarningList() {
-		return array();
+		return array(
+			126 => 1, // Whitelist comment deprecation warning.
+			127 => 1, // Whitelist comment deprecation warning.
+			128 => 1, // Whitelist comment deprecation warning.
+			241 => 1, // Whitelist comment deprecation warning.
+			243 => 1, // Whitelist comment deprecation warning.
+			250 => 1, // Whitelist comment deprecation warning.
+		);
 	}
 
 }

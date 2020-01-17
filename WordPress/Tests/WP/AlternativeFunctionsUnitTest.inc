@@ -28,17 +28,17 @@ srand(); // Warning.
 mt_srand(); // Warning.
 wp_rand(); // OK.
 
-// @codingStandardsChangeSetting WordPress.WP.AlternativeFunctions minimum_supported_version 4.0
+// phpcs:set WordPress.WP.AlternativeFunctions minimum_supported_version 4.0
 parse_url( 'http://example.com/' ); // OK.
-// @codingStandardsChangeSetting WordPress.WP.AlternativeFunctions minimum_supported_version 4.6
+// phpcs:set WordPress.WP.AlternativeFunctions minimum_supported_version 4.6
 
 strip_tags( $something, '<iframe>' ); // OK.
 
-// @codingStandardsChangeSetting WordPress.WP.AlternativeFunctions minimum_supported_version 4.0
+// phpcs:set WordPress.WP.AlternativeFunctions minimum_supported_version 4.0
 parse_url($url, PHP_URL_QUERY); // OK.
-// @codingStandardsChangeSetting WordPress.WP.AlternativeFunctions minimum_supported_version 4.7
+// phpcs:set WordPress.WP.AlternativeFunctions minimum_supported_version 4.7
 parse_url($url, PHP_URL_SCHEME); // Warning.
-// @codingStandardsChangeSetting WordPress.WP.AlternativeFunctions minimum_supported_version 4.6
+// phpcs:set WordPress.WP.AlternativeFunctions minimum_supported_version 4.6
 
 file_get_contents( $local_file, true ); // OK.
 file_get_contents( $url, false ); // Warning.
@@ -50,3 +50,24 @@ file_get_contents(MYABSPATH . 'plugin-file.json'); // Warning.
 file_get_contents( MUPLUGINDIR . 'some-file.xml' ); // OK.
 file_get_contents( plugin_dir_path( __FILE__ ) . 'subfolder/*.conf' ); // OK.
 file_get_contents(WP_Upload_Dir()['path'] . 'subdir/file.inc'); // OK.
+file_get_contents( 'php://input' ); // OK.
+
+// Loosely related to issue 295.
+file_get_contents( 'php://stdin' ); // OK.
+$input_stream = fopen( 'php://stdin', 'w' ); // OK.
+$csv_ar = fopen(STDIN); // OK.
+
+$output_stream = fopen( 'php://output', 'w' ); // OK.
+$output_stream = fopen( 'php://stdout', 'w' ); // OK.
+$output_stream = fopen( 'php://stderr', 'w' ); // OK.
+$output_stream = fopen( STDOUT, 'w' ); // OK.
+$output_stream = fopen( STDERR, 'w' ); // OK.
+$output_stream = fopen( 'php://fd/3', 'w' ); // OK.
+$fp = fopen("php://temp/maxmemory:$fiveMBs", 'r+'); // OK.
+readfile( 'php://filter/resource=http://www.example.com' ); // Warning.
+file_put_contents("php://filter/write=string.rot13/resource=example.txt","Hello World"); // Warning.
+
+curl_version(); // OK.
+
+// Safeguard that additional logic uses case-insensitive function name check.
+Strip_Tags( $something ); // Warning.

@@ -3,15 +3,15 @@
  * WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Sniffs\WP;
+namespace WordPressCS\WordPress\Sniffs\WP;
 
-use WordPress\AbstractFunctionRestrictionsSniff;
-use WordPress\PHPCSHelper;
-use PHP_CodeSniffer_Tokens as Tokens;
+use WordPressCS\WordPress\AbstractFunctionRestrictionsSniff;
+use WordPressCS\WordPress\PHPCSHelper;
+use PHP_CodeSniffer\Util\Tokens;
 
 /**
  * Makes sure WP internationalization functions are used properly.
@@ -23,11 +23,12 @@ use PHP_CodeSniffer_Tokens as Tokens;
  *
  * @since   0.10.0
  * @since   0.11.0 - Now also checks for translators comments.
- *                 - Now has the ability to handle text-domain set via the command-line
+ *                 - Now has the ability to handle text domain set via the command-line
  *                   as a comma-delimited list.
  *                   `phpcs --runtime-set text_domain my-slug,default`
  * @since   0.13.0 Class name changed: this class is now namespaced.
- * @since   1.0.0  This class now extends the AbstractFunctionRestrictionSniff.
+ * @since   1.0.0  This class now extends the WordPressCS native
+ *                 `AbstractFunctionRestrictionSniff` class.
  *                 The parent `exclude` property is, however, disabled as it
  *                 would disable the whole sniff.
  */
@@ -192,7 +193,7 @@ class I18nSniff extends AbstractFunctionRestrictionsSniff {
 		// Allow overruling the text_domain set in a ruleset via the command line.
 		$cl_text_domain = trim( PHPCSHelper::get_config_data( 'text_domain' ) );
 		if ( ! empty( $cl_text_domain ) ) {
-			$this->text_domain = $cl_text_domain;
+			$this->text_domain = array_filter( array_map( 'trim', explode( ',', $cl_text_domain ) ) );
 		}
 
 		$this->text_domain = $this->merge_custom_array( $this->text_domain, array(), false );
@@ -483,7 +484,7 @@ class I18nSniff extends AbstractFunctionRestrictionsSniff {
 
 				if ( true === $this->text_domain_is_default && 'default' === $stripped_content ) {
 					$fixable    = false;
-					$error      = 'No need to supply the text domain when the only accepted text-domain is "default".';
+					$error      = 'No need to supply the text domain when the only accepted text domain is "default".';
 					$error_code = 'SuperfluousDefaultTextDomain';
 
 					if ( $tokens[0]['token_index'] === $stack_ptr ) {
@@ -632,8 +633,8 @@ class I18nSniff extends AbstractFunctionRestrictionsSniff {
 	/**
 	 * Check for the presence of a translators comment if one of the text strings contains a placeholder.
 	 *
-	 * @param int   $stack_ptr  The position of the gettext call token in the stack.
-	 * @param array $args       The function arguments.
+	 * @param int   $stack_ptr The position of the gettext call token in the stack.
+	 * @param array $args      The function arguments.
 	 * @return void
 	 */
 	protected function check_for_translator_comment( $stack_ptr, $args ) {

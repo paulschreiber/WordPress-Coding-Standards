@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\NamingConventions;
+namespace WordPressCS\WordPress\Tests\NamingConventions;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -27,10 +27,10 @@ class ValidHookNameUnitTest extends AbstractSniffUnitTest {
 	 * @param string $testFile The name of the file being tested.
 	 * @return array <int line number> => <int number of errors>
 	 */
-	public function getErrorList( $testFile = 'ValidHookNameUnitTest.inc' ) {
+	public function getErrorList( $testFile = 'ValidHookNameUnitTest.1.inc' ) {
 
 		switch ( $testFile ) {
-			case 'ValidHookNameUnitTest.inc':
+			case 'ValidHookNameUnitTest.1.inc':
 				return array(
 					14 => 1,
 					15 => 1,
@@ -39,7 +39,7 @@ class ValidHookNameUnitTest extends AbstractSniffUnitTest {
 					28 => 1,
 					29 => 1,
 					30 => 1,
-					32 => 1,
+					33 => 1,
 					53 => 1,
 					54 => 1,
 					55 => 1,
@@ -68,10 +68,11 @@ class ValidHookNameUnitTest extends AbstractSniffUnitTest {
 					79 => 1,
 					80 => 1,
 					81 => 1,
+					89 => 1,
 				);
 
-			case 'ValidHookNameUnitTest.1.inc':
 			case 'ValidHookNameUnitTest.2.inc':
+			case 'ValidHookNameUnitTest.3.inc':
 			default:
 				return array();
 		}
@@ -83,10 +84,10 @@ class ValidHookNameUnitTest extends AbstractSniffUnitTest {
 	 * @param string $testFile The name of the file being tested.
 	 * @return array <int line number> => <int number of warnings>
 	 */
-	public function getWarningList( $testFile = 'ValidHookNameUnitTest.inc' ) {
+	public function getWarningList( $testFile = 'ValidHookNameUnitTest.1.inc' ) {
 
 		switch ( $testFile ) {
-			case 'ValidHookNameUnitTest.inc':
+			case 'ValidHookNameUnitTest.1.inc':
 				return array(
 					8  => 1,
 					9  => 1,
@@ -95,10 +96,11 @@ class ValidHookNameUnitTest extends AbstractSniffUnitTest {
 					68 => 1,
 					72 => 1,
 					77 => 1,
+					95 => 1,
 				);
 
-			case 'ValidHookNameUnitTest.1.inc':
 			case 'ValidHookNameUnitTest.2.inc':
+			case 'ValidHookNameUnitTest.3.inc':
 				return array(
 					12 => 1,
 					13 => 1,

@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\WP;
+namespace WordPressCS\WordPress\Tests\WP;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -28,7 +28,7 @@ class DeprecatedFunctionsUnitTest extends AbstractSniffUnitTest {
 	 */
 	public function getErrorList() {
 
-		$errors = array_fill( 8, 310, 1 );
+		$errors = array_fill( 8, 329, 1 );
 
 		// Unset the lines related to version comments.
 		unset(
@@ -45,21 +45,25 @@ class DeprecatedFunctionsUnitTest extends AbstractSniffUnitTest {
 			$errors[80],
 			$errors[118],
 			$errors[125],
-			$errors[161],
-			$errors[174],
-			$errors[178],
-			$errors[210],
-			$errors[233],
-			$errors[251],
-			$errors[255],
-			$errors[262],
-			$errors[274],
-			$errors[281],
-			$errors[285],
-			$errors[290],
-			$errors[295],
-			$errors[303],
-			$errors[310]
+			$errors[162],
+			$errors[175],
+			$errors[179],
+			$errors[211],
+			$errors[234],
+			$errors[252],
+			$errors[256],
+			$errors[263],
+			$errors[275],
+			$errors[282],
+			$errors[286],
+			$errors[291],
+			$errors[296],
+			$errors[304],
+			$errors[311],
+			$errors[319],
+			$errors[323],
+			$errors[330],
+			$errors[332]
 		);
 
 		return $errors;
@@ -72,10 +76,10 @@ class DeprecatedFunctionsUnitTest extends AbstractSniffUnitTest {
 	 */
 	public function getWarningList() {
 
-		$warnings = array_fill( 323, 17, 1 );
+		$warnings = array_fill( 342, 6, 1 );
 
 		// Unset the lines related to version comments.
-		unset( $warnings[326], $warnings[333], $warnings[335] );
+		unset( $warnings[344] );
 
 		return $warnings;
 	}

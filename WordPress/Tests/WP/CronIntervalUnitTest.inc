@@ -52,7 +52,7 @@ add_filter( 'cron_schedules' ); // Ignore, no callback parameter.
 
 add_filter( 'cron_schedules', [ 'Foo', 'my_add_quicklier' ] ); // Error: 5 min.
 
-// Ignore, not our function. Currently gives false positive, will be fixed later when function call detection utility functions are added.
+// Ignore, not our function.
 My_Custom::add_filter( 'cron_schedules', [ 'Foo', 'my_add_quicklier' ] );
 
 // Deal correctly with the WP time constants.
@@ -81,7 +81,7 @@ add_filter( 'cron_schedules', function ( $schedules ) {
 	return $schedules;
 } ); // Warning: time undetermined.
 
-// @codingStandardsChangeSetting WordPress.WP.CronInterval min_interval 600
+// phpcs:set WordPress.WP.CronInterval min_interval 600
 add_filter( 'cron_schedules', function ( $schedules ) {
 	$schedules['every_2_mins'] = array(
 		'interval' => 2 * 60,
@@ -104,7 +104,7 @@ add_filter( 'cron_schedules', function ( $schedules ) {
 	return $schedules;
 } ); // OK: > 10 min.
 
-// @codingStandardsChangeSetting WordPress.WP.CronInterval min_interval 1800
+// phpcs:set WordPress.WP.CronInterval min_interval 1800
 add_filter( 'cron_schedules', function ( $schedules ) {
 	$schedules['every_2_mins'] = array(
 		'interval' => 2 * 60,
@@ -127,7 +127,7 @@ add_filter( 'cron_schedules', function ( $schedules ) {
 	return $schedules;
 } ); // Ok: > 30 min.
 
-// @codingStandardsChangeSetting WordPress.WP.CronInterval min_interval 900
+// phpcs:set WordPress.WP.CronInterval min_interval 900
 
 
 add_filter( 'cron_schedules', function ( $schedules ) {
@@ -139,3 +139,8 @@ add_filter( 'cron_schedules', function ( $schedules ) {
 	);
 	return $schedules;
 } ); // Error: 9 min.
+
+Custom::add_filter( 'cron_schedules', array( $class, $method ) ); // OK, not the WP function.
+add_filter( 'some_hook', array( $place, 'cron_schedules' ) ); // OK, not the hook we're looking for.
+add_filter( function() { return get_hook_name('cron_schedules'); }(), array( $class, $method ) ); // OK, nested in another function call.
+

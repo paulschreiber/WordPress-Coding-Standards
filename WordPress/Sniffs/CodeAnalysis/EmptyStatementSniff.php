@@ -3,14 +3,14 @@
  * WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Sniffs\CodeAnalysis;
+namespace WordPressCS\WordPress\Sniffs\CodeAnalysis;
 
-use WordPress\Sniff;
-use PHP_CodeSniffer_Tokens as Tokens;
+use WordPressCS\WordPress\Sniff;
+use PHP_CodeSniffer\Util\Tokens;
 
 /**
  * Checks against empty statements.
@@ -48,7 +48,8 @@ class EmptyStatementSniff extends Sniff {
 	 *
 	 * @param int $stackPtr The position of the current token in the stack.
 	 *
-	 * @return int Integer stack pointer to skip the rest of the file.
+	 * @return int|void Integer stack pointer to skip forward or void to continue
+	 *                  normal file processing.
 	 */
 	public function process_token( $stackPtr ) {
 
@@ -70,6 +71,17 @@ class EmptyStatementSniff extends Sniff {
 						&& \T_OPEN_TAG_WITH_ECHO !== $this->tokens[ $prevNonEmpty ]['code'] )
 				) {
 					return;
+				}
+
+				if ( isset( $this->tokens[ $stackPtr ]['nested_parenthesis'] ) ) {
+					$nested      = $this->tokens[ $stackPtr ]['nested_parenthesis'];
+					$last_closer = array_pop( $nested );
+					if ( isset( $this->tokens[ $last_closer ]['parenthesis_owner'] )
+						&& \T_FOR === $this->tokens[ $this->tokens[ $last_closer ]['parenthesis_owner'] ]['code']
+					) {
+						// Empty for() condition.
+						return;
+					}
 				}
 
 				$fix = $this->phpcsFile->addFixableWarning(

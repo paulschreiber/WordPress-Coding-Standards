@@ -3,14 +3,14 @@
 /*
  * Bad: invalid prefix passed
  */
-// @codingStandardsChangeSetting WordPress.NamingConventions.PrefixAllGlobals prefixes wp
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] wp
 function wp_do_something() {}
 
-// @codingStandardsChangeSetting WordPress.NamingConventions.PrefixAllGlobals prefixes ^%&
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] ^%&
 function ^%&_do_something() {}
 
 // Now let's set the real prefixes we want to test for.
-// @codingStandardsChangeSetting WordPress.NamingConventions.PrefixAllGlobals prefixes acronym,tgmpa
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] acronym,tgmpa
 
 /*
  * Bad - not prefixed.
@@ -181,7 +181,7 @@ class Example extends WP_UnitTestCase {
 	function do_something() {}
 }
 
-// @codingStandardsChangeSetting WordPress.NamingConventions.PrefixAllGlobals custom_test_class_whitelist My_TestClass
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals custom_test_class_whitelist[] My_TestClass
 class Test_Class_D extends My_TestClass {
 
 	const SOME_CONSTANT = 'value';
@@ -190,7 +190,7 @@ class Test_Class_D extends My_TestClass {
 
 	function do_something() {}
 }
-// @codingStandardsChangeSetting WordPress.NamingConventions.PrefixAllGlobals custom_test_class_whitelist false
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals custom_test_class_whitelist[]
 
 
 /*
@@ -314,7 +314,7 @@ define( '\OtherNameSpace\PLUGIN_FILE', __FILE__ ); // OK.
 define( __NAMESPACE__ . '\PLUGIN_FILE', __FILE__ );
 define( '\PLUGIN_FILE', __FILE__ );
 
-namespace Testing {
+namespace TGMPA\Testing {
 	define( 'MY' . __NAMESPACE__, __FILE__ ); // Error, not actually namespaced.
 	define( 'MY\\' . __NAMESPACE__, __FILE__ ); // OK, even though strangely setup, the constant is in a namespace.
 }
@@ -379,7 +379,7 @@ define( 'FORCE_SSL_ADMIN', true );
 const SCRIPT_DEBUG = $develop_src;
 
 // Allow for hook name prefixes with less conventional separators.
-// @codingStandardsChangeSetting WordPress.NamingConventions.PrefixAllGlobals prefixes test-this,myplugin\
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] test-this,myplugin\
 do_action( 'test-this-hookname' ); // OK.
 apply_filters( 'myplugin\filtername', $var ); // OK.
 
@@ -398,4 +398,111 @@ class Some_Test_Class extends NonTestClass { // Bad.
 	}
 }
 
-// @codingStandardsChangeSetting WordPress.NamingConventions.PrefixAllGlobals prefixes false
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] wordpress,somethingelse
+// The above line adds an issue to line 1 about a blacklisted prefix.
+function wordpress_do_something() {} // Bad.
+function somethingelse_do_something() {} // OK.
+
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] my_wordpress_plugin
+apply_filters( 'my_wordpress_plugin_filtername', $var ); // OK.
+
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] test-this
+do_action( 'Test-THIS-hookname' ); // OK.
+
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] acronym,tgmpa
+// Issue #1495 - throw the error on the line with the non-prefixed name.
+$acronym = apply_filters(
+	'content-types-post-types', // Bad.
+	[
+		PostType\Post::NAME => PostType\Post::class,
+	]
+);
+
+define(
+	/* comment */
+	'SOME_GLOBAL', // Bad.
+	[ 1, 2, 3 ]
+);
+
+// Issue #1043.
+function acronym_content_width() {
+	$GLOBALS['content_width'] = apply_filters( 'acronym_content_width', 640 );
+}
+
+/*
+ * Issue #1774: detect variables being set via the list() construct.
+ */
+// Empty list, not allowed since PHP 7.0, but not our concern.
+list() = $array; // OK.
+list(, ,) = $array; // OK.
+
+// Ordinary list.
+list( $var1, , $var2 )               = $array; // Bad x 2.
+list( $acronym_var1, $acronym_var2 ) = $array; // OK.
+
+// Short list.
+[ $var1, $var2 ]                 = $array; // Bad x 2.
+[ $acronym_var1, $acronym_var2 ] = $array; // OK.
+
+// Keyed list. Keys are not assignments.
+list((string)$a => $store["B"], (string)$c => $store["D"]) = $e->getIndexable(); // Bad x 2.
+[$foo => $GLOBALS['bar']] = $bar; // Bad x 1.
+
+// Nested list.
+list( $var1, , list( $var2, $var3, ), $var4 ) = $array; // Bad x 4.
+
+// List with array assignments.
+list( $foo['key'], $foo[ $bar ] ) = $array; // Bad x 2. Variable array key should be ignored.
+
+function acronym_lists_in_function_scope() {
+	global $store, $c;
+
+	list( $var1, , $var2 ) = $array; // OK.
+	[ $var1, $var2 ]       = $array; // OK.
+
+	// Keyed list. Keys are not assignments.
+	list((string)$a => $store["B"], (string)$c => $store["D"]) = $e->getIndexable(); // Bad x 2.
+	[$foo => $GLOBALS['bar']] = $bar; // Bad x 1.
+
+	// Nested list.
+	list( $var1, , list( $c, $var3, ), $var4 ) = $array; // Bad x 1 - $c.
+
+	// List with array assignments.
+	list( $foo['key'], $foo[ $c ] ) = $array; // OK. Variable array key should be ignored.
+}
+
+// Issue #1797 - Ignore non-prefixed deprecated functions.
+/**
+ * Function description.
+ *
+ * @since 1.2.3
+ * @deprecated 2.3.4
+ *
+ * @return void
+ */
+function deprecated_function() {}
+
+/*
+ * Bad: Issue https://github.com/WordPress/WordPress-Coding-Standards/issues/1733.
+ *
+ * Short prefixes are not allowed. The errors are triggered
+ * on LINE 1 for the unit-test, because it's the phpcs:set command that is
+ * wrong, not the implementing code.
+ */
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] a
+function a_do_something(){}
+
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] aa
+function aa_do_something(){}
+
+// The following line mimicks an empty prefix value.
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] ,
+function aa_do_something(){}
+
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] 😊
+function 😊_do_something(){}
+
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[] 😊😊
+function 😊😊_do_something(){}
+
+// phpcs:set WordPress.NamingConventions.PrefixAllGlobals prefixes[]

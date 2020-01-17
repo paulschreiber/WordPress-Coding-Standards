@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\WP;
+namespace WordPressCS\WordPress\Tests\WP;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -45,7 +45,6 @@ class GlobalVariablesOverrideUnitTest extends AbstractSniffUnitTest {
 					36  => 1,
 					54  => 1,
 					95  => 1,
-					124 => 1,
 					128 => 1,
 					133 => 1,
 					139 => 1,
@@ -57,6 +56,11 @@ class GlobalVariablesOverrideUnitTest extends AbstractSniffUnitTest {
 					181 => 1,
 					198 => 1,
 					212 => 4,
+					230 => 2,
+					231 => 2,
+					234 => 2,
+					239 => 3,
+					242 => 1,
 				);
 
 			case 'GlobalVariablesOverrideUnitTest.2.inc':
@@ -86,10 +90,20 @@ class GlobalVariablesOverrideUnitTest extends AbstractSniffUnitTest {
 	/**
 	 * Returns the lines where warnings should occur.
 	 *
+	 * @param string $testFile The name of the file being tested.
+	 *
 	 * @return array <int line number> => <int number of warnings>
 	 */
-	public function getWarningList() {
-		return array();
+	public function getWarningList( $testFile = '' ) {
+		switch ( $testFile ) {
+			case 'GlobalVariablesOverrideUnitTest.1.inc':
+				return array(
+					11 => 1, // Whitelist comment deprecation warning.
+				);
+
+			default:
+				return array();
+		}
 	}
 
 }

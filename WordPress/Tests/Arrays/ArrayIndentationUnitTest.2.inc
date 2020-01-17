@@ -1,5 +1,5 @@
 <?php
-// @codingStandardsChangeSetting WordPress.Arrays.ArrayIndentation tabIndent false
+// phpcs:set WordPress.Arrays.ArrayIndentation tabIndent false
 $ok = array(
     'value',
     123,
@@ -429,4 +429,12 @@ $my_array = [
     'something_else',
 ];
 
-// @codingStandardsChangeSetting WordPress.Arrays.ArrayIndentation tabIndent true
+/*
+ * Issue #1692: Test distinguishing between short array and short list.
+ */
+[
+'prop1' => $prop1,
+			'prop2' => $prop2,
+] = $some_var;
+
+// phpcs:set WordPress.Arrays.ArrayIndentation tabIndent true

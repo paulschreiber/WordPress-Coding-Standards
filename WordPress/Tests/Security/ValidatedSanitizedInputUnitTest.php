@@ -3,11 +3,11 @@
  * Unit test class for WordPress Coding Standard.
  *
  * @package WPCS\WordPressCodingStandards
- * @link    https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards
+ * @link    https://github.com/WordPress/WordPress-Coding-Standards
  * @license https://opensource.org/licenses/MIT MIT
  */
 
-namespace WordPress\Tests\Security;
+namespace WordPressCS\WordPress\Tests\Security;
 
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
@@ -54,6 +54,31 @@ class ValidatedSanitizedInputUnitTest extends AbstractSniffUnitTest {
 			138 => 1,
 			150 => 2,
 			160 => 2,
+			164 => 2,
+			189 => 1,
+			202 => 1,
+			206 => 1,
+			210 => 1,
+			216 => 1,
+			217 => 1,
+			238 => 1,
+			242 => 1,
+			245 => 1,
+			251 => 1,
+			257 => 1,
+			266 => 1,
+			277 => 1,
+			290 => 2,
+			300 => 1,
+			305 => 2,
+			306 => 2,
+			307 => 2,
+			309 => 2,
+			310 => 2,
+			311 => 2,
+			315 => 2,
+			317 => 1,
+			323 => 1,
 		);
 	}
 
@@ -63,7 +88,9 @@ class ValidatedSanitizedInputUnitTest extends AbstractSniffUnitTest {
 	 * @return array <int line number> => <int number of warnings>
 	 */
 	public function getWarningList() {
-		return array();
+		return array(
+			76 => 1, // Whitelist comment deprecation warning.
+		);
 	}
 
 }
